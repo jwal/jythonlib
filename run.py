@@ -1,4 +1,4 @@
-#/usr/bin/env python
+#!/usr/bin/env python
 
 import optparse
 import os
@@ -21,3 +21,4 @@ if __name__ == "__main__":
     cp.extend(os.path.join(rootcp, b) for b in os.listdir(rootcp))
     env["CLASSPATH"] = os.pathsep.join(cp)
     os.execvpe(args[0], args, env)
+    
