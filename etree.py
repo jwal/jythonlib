@@ -3,9 +3,26 @@
 # library for xpython but suitable for use with Jython 2.5 on J2SE6.
 
 from org.dom4j import DocumentHelper
+from org.dom4j import Namespace
+from org.dom4j import QName
 from org.dom4j.io import SAXReader
 from org.jaxen import SimpleVariableContext;
 from org.jaxen import VariableContext;
+
+
+def _format_qname(qname):
+    if qname.namespaceURI == "":
+        return qname.name
+    else:
+        return "{%s}%s" % (qname.namespaceURI, qname.name)
+
+
+def _make_qname(long_name):
+    if "}" in long_name:
+        namespace, name = long_name.lstrip("{").split("}")
+        return QName(name, Namespace(None, namespace))
+    else:
+        return QName(long_name, Namespace.NO_NAMESPACE)
 
 
 class RootTree(object):
@@ -32,6 +49,20 @@ class Attributes(object):
     def items(self):
         return list(self.iteritems())
 
+    def __setitem__(self, key, value):
+        self._elem.setAttributeValue(_make_qname(key), value)
+
+    def __getitem__(self, key):
+        return dict(self.iteritems())[key]
+
+    def __delitem__(self, key): 
+        # Check for key error
+        dict(self.iteritems())[key]
+        self._elem.setAttributeValue(_make_qname(key), None)
+
+    def get(self, key, default=None):
+        return dict(self.iteritems()).get(key, default)
+
     def __repr__(self):
         return "<%s {%s}>" % (type(self).__name__,
                               ", ".join("%r: %r" % (k, v) for (k, v) 
@@ -48,13 +79,6 @@ class BrokenVariableContext(VariableContext):
 
     def getVariableValue(self, namespace, prefix, name):
         return self._values[name]
-
-
-def _format_qname(qname):
-    if qname.namespaceURI == "":
-        return qname.name
-    else:
-        return "{%s}%s" % (qname.namespaceURI, qname.name)
 
 
 class Element(object):
@@ -81,6 +105,7 @@ class Element(object):
 def parse_file(filename):
     # Untested so far
     return RootTree(SAXReader().read(filename))
+
 
 def parse_string(text):
     return RootTree(DocumentHelper.parseText(text))
